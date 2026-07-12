@@ -183,6 +183,24 @@
 
         const EMAILJS_SERVICE_ID = "farmacia_service";
         const EMAILJS_TEMPLATE_ID = "template_nvhp7al";
+        const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbxXdzHjzsWum8uHiAXQuZWj1qEW5tw2aCFBMeQ9SK5rJY49eYK6xPH97wIfyMYtuIFS/exec";
+
+        function guardarEnHistorial(fecha, sucursal, encargada, productosTexto, notas) {
+            fetch(GOOGLE_SHEETS_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({
+                    fecha: fecha,
+                    sucursal: sucursal,
+                    encargada: encargada,
+                    productos: productosTexto,
+                    notas: notas
+                })
+            }).catch(function(error) {
+                console.error('Error guardando en historial:', error);
+            });
+        }
 
         function enviarPorCorreo() {
             if (orden.length === 0) { alert('La orden está vacía.'); return; }
@@ -198,6 +216,7 @@
                 '<th style="padding:8px;text-align:left;border:1px solid #cbd5e1;">Producto - Marca</th>' +
                 '<th style="padding:8px;text-align:center;border:1px solid #cbd5e1;">Cantidad/Nota</th>' +
                 '</tr>';
+            let productosTexto = '';
             orden.forEach((o, i) => {
                 const fondo = i % 2 === 0 ? '#f8fafc' : '#ffffff';
                 productosHtml += '<tr style="background-color:' + fondo + ';">' +
@@ -205,6 +224,7 @@
                     '<td style="padding:8px;border:1px solid #cbd5e1;">' + o.label + '</td>' +
                     '<td style="padding:8px;text-align:center;border:1px solid #cbd5e1;">' + o.cantidad + '</td>' +
                     '</tr>';
+                productosTexto += (i + 1) + '. ' + o.label + ' | Cantidad/Nota: ' + o.cantidad + '\n';
             });
             productosHtml += '</table>';
 
@@ -223,9 +243,12 @@
             boton.disabled = true;
             boton.innerHTML = '⏳ Enviando...';
 
+            // Guardar en el historial de Google Sheets (no bloquea el envío del correo)
+            guardarEnHistorial(fecha, sucursal, encargada, productosTexto, notas);
+
             emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
                 .then(function() {
-                    alert('✅ ¡Orden enviada correctamente por correo!');
+                    alert('✅ ¡Orden enviada correctamente por correo y guardada en el historial!');
                     boton.disabled = false;
                     boton.innerHTML = textoOriginal;
                 }, function(error) {
