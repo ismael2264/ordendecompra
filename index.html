@@ -44,7 +44,16 @@
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-600 mb-1">Sucursal:</label>
-                    <input type="text" id="sucursal" placeholder="Nombre de la sucursal" class="w-full border border-gray-300 rounded-lg p-2.5 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <select id="sucursal" class="w-full border border-gray-300 rounded-lg p-2.5 text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="">-- Selecciona una sucursal --</option>
+                        <option value="SUCURSAL ATITLAN">SUCURSAL ATITLAN</option>
+                        <option value="SUCURSAL CHICACAO 1">SUCURSAL CHICACAO 1</option>
+                        <option value="SUCURSAL CHICACAO 2">SUCURSAL CHICACAO 2</option>
+                        <option value="SUCURSAL SAN ANTONIO">SUCURSAL SAN ANTONIO</option>
+                        <option value="SUCURSAL SANTA BARBARA">SUCURSAL SANTA BARBARA</option>
+                        <option value="CLINICA MEDICA">CLINICA MEDICA</option>
+                        <option value="SUCURSAL NUEVA">SUCURSAL NUEVA</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-600 mb-1">Encargada:</label>
@@ -185,7 +194,7 @@
         const EMAILJS_TEMPLATE_ID = "template_nvhp7al";
         const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbxXdzHjzsWum8uHiAXQuZWj1qEW5tw2aCFBMeQ9SK5rJY49eYK6xPH97wIfyMYtuIFS/exec";
 
-        function guardarEnHistorial(fecha, sucursal, encargada, productosTexto, notas) {
+        function guardarEnHistorial(fecha, sucursal, encargada, productosArray, notas) {
             fetch(GOOGLE_SHEETS_URL, {
                 method: 'POST',
                 mode: 'no-cors',
@@ -194,7 +203,7 @@
                     fecha: fecha,
                     sucursal: sucursal,
                     encargada: encargada,
-                    productos: productosTexto,
+                    productos: productosArray,
                     notas: notas
                 })
             }).catch(function(error) {
@@ -206,7 +215,8 @@
             if (orden.length === 0) { alert('La orden está vacía.'); return; }
 
             const fecha = document.getElementById('fecha').value;
-            const sucursal = document.getElementById('sucursal').value || 'No especificada';
+            const sucursal = document.getElementById('sucursal').value;
+            if (!sucursal) { alert('Por favor selecciona una sucursal.'); return; }
             const encargada = document.getElementById('encargada').value || 'No especificada';
             const notas = document.getElementById('notas-generales').value || 'Sin notas adicionales';
 
@@ -216,7 +226,7 @@
                 '<th style="padding:8px;text-align:left;border:1px solid #cbd5e1;">Producto - Marca</th>' +
                 '<th style="padding:8px;text-align:center;border:1px solid #cbd5e1;">Cantidad/Nota</th>' +
                 '</tr>';
-            let productosTexto = '';
+            let productosArray = [];
             orden.forEach((o, i) => {
                 const fondo = i % 2 === 0 ? '#f8fafc' : '#ffffff';
                 productosHtml += '<tr style="background-color:' + fondo + ';">' +
@@ -224,7 +234,11 @@
                     '<td style="padding:8px;border:1px solid #cbd5e1;">' + o.label + '</td>' +
                     '<td style="padding:8px;text-align:center;border:1px solid #cbd5e1;">' + o.cantidad + '</td>' +
                     '</tr>';
-                productosTexto += (i + 1) + '. ' + o.label + ' | Cantidad/Nota: ' + o.cantidad + '\n';
+                productosArray.push({
+                    producto: o.producto,
+                    marca: o.marca,
+                    cantidad: o.cantidad
+                });
             });
             productosHtml += '</table>';
 
@@ -244,7 +258,7 @@
             boton.innerHTML = '⏳ Enviando...';
 
             // Guardar en el historial de Google Sheets (no bloquea el envío del correo)
-            guardarEnHistorial(fecha, sucursal, encargada, productosTexto, notas);
+            guardarEnHistorial(fecha, sucursal, encargada, productosArray, notas);
 
             emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
                 .then(function() {
