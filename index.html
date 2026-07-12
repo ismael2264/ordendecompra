@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Orden de Compra</title>
+    <!-- Tailwind CSS v3 Play CDN para máxima estabilidad sin pantallas blancas -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-5xl mx-auto bg-white rounded-xl shadow-lg border border-gray-100 p-6 md:p-8">
+        
+        <!-- Encabezado -->
+        <div class="border-b border-gray-200 pb-6 mb-6">
+            <h1 class="text-3xl font-bold text-slate-800 mb-4">🛒 ORDEN DE COMPRA</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-600 mb-1">Fecha:</label>
+                    <input type="date" id="fecha" class="w-full border border-gray-300 rounded-lg p-2.5 text-gray-700 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-600 mb-1">Sucursal:</label>
+                    <input type="text" id="sucursal" placeholder="Nombre de la sucursal" class="w-full border border-gray-300 rounded-lg p-2.5 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-600 mb-1">Encargada:</label>
+                    <input type="text" id="encargada" placeholder="Nombre de la encargada" class="w-full border border-gray-300 rounded-lg p-2.5 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+            </div>
+        </div>
+
+        <!-- Buscador Inteligente -->
+        <div class="bg-amber-50 rounded-xl p-5 border border-amber-200 mb-6 relative">
+            <h2 class="text-lg font-bold text-amber-800 mb-2">🔍 Buscador Inteligente de Productos</h2>
+            <p class="text-xs text-amber-700 mb-4">Escribe parte del nombre o marca. La lista se filtrará al instante entre los artículos.</p>
+            
+            <div class="relative">
+                <input type="text" id="buscador" oninput="filtrarProductos()" placeholder="Escribe aquí para buscar (ej: Abrilar, Jaloma, Caplin...)" class="w-full border-2 border-amber-300 rounded-xl p-3 text-gray-800 bg-white font-medium shadow-sm focus:ring-4 focus:ring-amber-200 focus:border-amber-500 focus:outline-none">
+                
+                <!-- Dropdown de resultados -->
+                <div id="resultados" class="hidden absolute left-0 right-0 top-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto z-50"></div>
+            </div>
+        </div>
+
+        <!-- Agregar Manualmente -->
+        <div class="bg-slate-50 rounded-xl p-5 border border-slate-200 mb-8">
+            <h2 class="text-lg font-bold text-slate-700 mb-2">✨ ¿No encuentras el producto? Agrégalo manualmente</h2>
+            <p class="text-xs text-slate-500 mb-4">Ingresa el nombre de la descripción y la marca para agregarlo de forma personalizada a la orden.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Descripción del Producto:</label>
+                    <input type="text" id="nuevo-producto" placeholder="Ej: Paracetamol 500mg Jarabe" class="w-full border border-gray-300 rounded-lg p-2 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Marca (Opcional):</label>
+                    <input type="text" id="nueva-marca" placeholder="Ej: Genérico" class="w-full border border-gray-300 rounded-lg p-2 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+                </div>
+                <div>
+                    <button onclick="agregarProductoManual()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg p-2.5 transition-colors shadow-sm flex items-center justify-center gap-1">
+                        ➕ Agregar Producto Nuevo
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de Orden -->
+        <div>
+            <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                📋 Productos en la Orden <span id="contador-items" class="text-sm bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full font-semibold">0</span>
+            </h2>
+            
+            <div class="overflow-x-auto border border-gray-200 rounded-xl">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 border-b border-gray-200 text-slate-700 font-semibold text-sm">
+                            <th class="p-4 w-1/2">Producto - Marca Seleccionado</th>
+                            <th class="p-4 w-1/4 text-center">Cantidad o Nota</th>
+                            <th class="p-4 w-1/4 text-center">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-orden" class="divide-y divide-gray-100 text-gray-700 text-sm">
+                        <tr id="fila-vacia">
+                            <td colspan="3" class="p-8 text-center text-gray-400 italic">No has agregado ningún producto a la orden todavía. Usa el buscador o agrégalo manualmente.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="mt-8 pt-6 border-t border-gray-200 flex flex-col sm:flex-row gap-4 justify-between items-center">
+            <button onclick="limpiarTodo()" class="px-5 py-2.5 text-sm font-medium text-gray-500 hover:text-red-600 transition-colors">
+                Borrar Todo
+            </button>
+            <div class="flex gap-4 w-full sm:w-auto">
+                <button onclick="exportarOrden()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl px-6 py-3 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                    📥 Descargar Excel de la Orden
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Lógica de Control y Datos -->
+    <script>
+        // Fecha automática del día de hoy
+        document.getElementById('fecha').valueAsDate = new Date();
+
+        // Muestra de la Base de Datos estructurada limpiamente (Sin caracteres que rompan la pantalla)
+        const database = [
+            {"id": 1, "label": "3-GEL SUSPENCION  *20 SOBRES - GENERAL", "producto": "3-GEL SUSPENCION  *20 SOBRES", "marca": "GENERAL"},
+            {"id": 2, "label": "ABDOL 50 MG * 10 TABLETAS (DICLOFENACO SODICO) - PHARMALAT", "producto": "ABDOL 50 MG * 10 TABLETAS (DICLOFENACO SODICO)", "marca": "PHARMALAT"},
+            {"id": 3, "label": "ABREXIL JARABE PARA TOS 120 ML - SELECTPHARMA", "producto": "ABREXIL JARABE PARA TOS 120 ML", "marca": "SELECTPHARMA"},
+            {"id": 4, "label": "ABRILAR EA575 SUSPENCION 100ML (HEDERA HELIX) - MEGALABS", "producto": "ABRILAR EA575 SUSPENCION 100ML (HEDERA HELIX)", "marca": "MEGALABS"},
+            {"id": 5, "label": "ABRILAR EA575 SUSPENCION 200ML - MEGALABS", "producto": "ABRILAR EA575 SUSPENCION 200ML", "marca": "MEGALABS"}
+            // Aquí van los demás registros mapeados de la lista
+        ];
+
+        let orden = [];
+
+        function filtrarProductos() {
+            const buscar = document.getElementById('buscador').value.toLowerCase();
+            const resultados = document.getElementById('resultados');
+            if (!buscar) { resultados.classList.add('hidden'); return; }
+            
+            // Filtro dinámico en tiempo real
+            const filtrados = database.filter(p => p.label.toLowerCase().includes(buscar)).slice(0, 10);
+            if (filtrados.length === 0) { resultados.classList.add('hidden'); return; }
+            
+            resultados.innerHTML = filtrados.map(p => `
+                <div onclick="agregarProducto(${p.id})" class="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-none text-gray-700 font-medium">
+                    ${p.label}
+                </div>
+            `).join('');
+            resultados.classList.remove('hidden');
+        }
+
+        function agregarProducto(id) {
+            const prod = database.find(p => p.id === id);
+            if (!prod) return;
+            if (orden.some(o => o.id === id)) { alert('Este producto ya está en la orden'); return; }
+            orden.push({ ...prod, cantidad: 1 });
+            actualizarTabla();
+            document.getElementById('buscador').value = '';
+            document.getElementById('resultados').classList.add('hidden');
+        }
+
+        function agregarProductoManual() {
+            const desc = document.getElementById('nuevo-producto').value.trim();
+            const marca = document.getElementById('nueva-marca').value.trim() || 'Personalizado';
+            if (!desc) { alert('Por favor ingresa la descripción del producto.'); return; }
+            
+            const nuevoId = 'm_' + Date.now();
+            const label = desc + ' - ' + marca;
+            orden.push({ id: nuevoId, label: label, producto: desc, marca: marca, cantidad: 1 });
+            actualizarTabla();
+            document.getElementById('nuevo-producto').value = '';
+            document.getElementById('nueva-marca').value = '';
+        }
+
+        function actualizarTabla() {
+            const tbody = document.getElementById('tabla-orden');
+            const contador = document.getElementById('contador-items');
+            contador.innerText = orden.length;
+            if (orden.length === 0) {
+                tbody.innerHTML = '<tr id="fila-vacia"><td colspan="3" class="p-8 text-center text-gray-400 italic">No has agregado ningún producto a la orden todavía. Usa el buscador o agrégalo manualmente.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = orden.map(o => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="p-4 font-medium text-slate-800">${o.label}</td>
+                    <td class="p-4 text-center">
+                        <input type="number" value="${o.cantidad}" onchange="cambiarCantidad('${o.id}', this.value)" class="w-20 border border-gray-300 rounded-lg p-1.5 text-center focus:ring-2 focus:ring-blue-500 focus:outline-none" min="1">
+                    </td>
+                    <td class="p-4 text-center">
+                        <button onclick="eliminarProducto('${o.id}')" class="text-red-500 hover:text-red-700 font-semibold">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function cambiarCantidad(id, cant) {
+            const item = orden.find(o => o.id == id);
+            if (item) item.cantidad = parseInt(cant) || 1;
+        }
+
+        function eliminarProducto(id) {
+            orden = orden.filter(o => o.id != id);
+            actualizarTabla();
+        }
+
+        function limpiarTodo() {
+            if (confirm('¿Seguro que deseas borrar toda la orden?')) { orden = []; actualizarTabla(); }
+        }
+
+        function exportarOrden() {
+            if (orden.length === 0) { alert('La orden está vacía.'); return; }
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFFFecha,Sucursal,Encargada,Producto,Marca,Cantidad\n";
+            const fecha = document.getElementById('fecha').value;
+            const sucursal = document.getElementById('sucursal').value || 'No especificada';
+            const encargada = document.getElementById('encargada').value || 'No especificada';
+            
+            orden.forEach(o => {
+                csvContent += '"' + fecha + '","' + sucursal + '","' + encargada + '","' + o.producto + '","' + o.marca + '",' + o.cantidad + '\n';
+            });
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "Orden_Compra_" + sucursal.replace(/\s+/g, '_') + ".csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
