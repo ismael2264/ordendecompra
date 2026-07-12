@@ -6,9 +6,31 @@
     <title>Sistema de Orden de Compra</title>
     <!-- Tailwind CSS v3 Play CDN para máxima estabilidad sin pantallas blancas -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen p-4 md:p-8">
 
+    <!-- Pantalla de Acceso -->
+    <div id="pantalla-login" class="max-w-sm mx-auto bg-white rounded-xl shadow-lg border border-gray-100 p-8 mt-16">
+        <h1 class="text-2xl font-bold text-slate-800 mb-1 text-center">🔒 Acceso al Sistema</h1>
+        <p class="text-sm text-gray-500 mb-6 text-center">Ingresa tu usuario y contraseña</p>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-semibold text-gray-600 mb-1">Usuario:</label>
+                <input type="text" id="login-usuario" placeholder="Ej: sucursal1" class="w-full border border-gray-300 rounded-lg p-2.5 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-600 mb-1">Contraseña:</label>
+                <input type="password" id="login-clave" placeholder="Ingresa tu contraseña" class="w-full border border-gray-300 rounded-lg p-2.5 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" onkeydown="if(event.key==='Enter') validarLogin()">
+            </div>
+            <p id="login-error" class="hidden text-sm text-red-600 text-center">Usuario o contraseña incorrectos.</p>
+            <button onclick="validarLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg p-2.5 transition-colors">
+                Ingresar
+            </button>
+        </div>
+    </div>
+
+    <div id="contenido-app" class="hidden">
     <div class="max-w-5xl mx-auto bg-white rounded-xl shadow-lg border border-gray-100 p-6 md:p-8">
         
         <!-- Encabezado -->
@@ -89,12 +111,21 @@
             </div>
         </div>
 
+        <!-- Notas Generales -->
+        <div class="mt-6">
+            <label for="notas-generales" class="block text-sm font-semibold text-gray-600 mb-2">📝 Notas Generales:</label>
+            <textarea id="notas-generales" rows="4" placeholder="Escribe aquí cualquier observación adicional sobre la orden..." class="w-full border border-gray-300 rounded-lg p-3 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-y"></textarea>
+        </div>
+
         <!-- Botones de Acción -->
         <div class="mt-8 pt-6 border-t border-gray-200 flex flex-col sm:flex-row gap-4 justify-between items-center">
             <button onclick="limpiarTodo()" class="px-5 py-2.5 text-sm font-medium text-gray-500 hover:text-red-600 transition-colors">
                 Borrar Todo
             </button>
             <div class="flex gap-4 w-full sm:w-auto">
+                <button onclick="enviarPorCorreo()" id="btn-enviar-correo" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl px-6 py-3 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                    📧 Enviar por Correo
+                </button>
                 <button onclick="exportarOrden()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl px-6 py-3 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
                     📥 Descargar Excel de la Orden
                 </button>
@@ -102,9 +133,98 @@
         </div>
 
     </div>
+    </div>
 
     <!-- Lógica de Control y Datos -->
     <script>
+        // Usuarios autorizados (usuario/contraseña)
+        const usuarios = [
+            { usuario: "sucursal1", clave: "rojo123" },
+            { usuario: "sucursal2", clave: "azul123" },
+            { usuario: "sucursal3", clave: "verde123" },
+            { usuario: "sucursal4", clave: "negro123" },
+            { usuario: "sucursal5", clave: "blanco123" },
+            { usuario: "sucursal6", clave: "gris123" },
+            { usuario: "sucursal7", clave: "morado123" },
+            { usuario: "sucursal8", clave: "naranja123" },
+            { usuario: "sucursal9", clave: "celeste123" },
+            { usuario: "sucursal10", clave: "dorado123" }
+        ];
+
+        function validarLogin() {
+            const usuarioIngresado = document.getElementById('login-usuario').value.trim().toLowerCase();
+            const claveIngresada = document.getElementById('login-clave').value.trim();
+            const errorMsg = document.getElementById('login-error');
+
+            const encontrado = usuarios.find(u => u.usuario.toLowerCase() === usuarioIngresado && u.clave === claveIngresada);
+
+            if (encontrado) {
+                document.getElementById('pantalla-login').classList.add('hidden');
+                document.getElementById('contenido-app').classList.remove('hidden');
+                sessionStorage.setItem('sesionActiva', usuarioIngresado);
+            } else {
+                errorMsg.classList.remove('hidden');
+            }
+        }
+
+        // Mantener la sesión activa mientras la pestaña esté abierta
+        window.addEventListener('DOMContentLoaded', () => {
+            const sesion = sessionStorage.getItem('sesionActiva');
+            if (sesion) {
+                document.getElementById('pantalla-login').classList.add('hidden');
+                document.getElementById('contenido-app').classList.remove('hidden');
+            }
+        });
+
+        // Configuración de EmailJS
+        (function() {
+            emailjs.init("il2wynLKBQSq2OVjM");
+        })();
+
+        const EMAILJS_SERVICE_ID = "farmacia_service";
+        const EMAILJS_TEMPLATE_ID = "template_nvhp7al";
+
+        function enviarPorCorreo() {
+            if (orden.length === 0) { alert('La orden está vacía.'); return; }
+
+            const fecha = document.getElementById('fecha').value;
+            const sucursal = document.getElementById('sucursal').value || 'No especificada';
+            const encargada = document.getElementById('encargada').value || 'No especificada';
+            const notas = document.getElementById('notas-generales').value || 'Sin notas adicionales';
+
+            let productosTexto = '';
+            orden.forEach(o => {
+                productosTexto += '- ' + o.label + ' | Cantidad/Nota: ' + o.cantidad + '\n';
+            });
+
+            const templateParams = {
+                fecha: fecha,
+                sucursal: sucursal,
+                encargada: encargada,
+                productos: productosTexto,
+                notas: notas,
+                name: encargada,
+                email: ''
+            };
+
+            const boton = document.getElementById('btn-enviar-correo');
+            const textoOriginal = boton.innerHTML;
+            boton.disabled = true;
+            boton.innerHTML = '⏳ Enviando...';
+
+            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
+                .then(function() {
+                    alert('✅ ¡Orden enviada correctamente por correo!');
+                    boton.disabled = false;
+                    boton.innerHTML = textoOriginal;
+                }, function(error) {
+                    alert('❌ Hubo un error al enviar el correo. Intenta de nuevo.');
+                    console.error('Error EmailJS:', error);
+                    boton.disabled = false;
+                    boton.innerHTML = textoOriginal;
+                });
+        }
+
         // Fecha automática del día de hoy
         document.getElementById('fecha').valueAsDate = new Date();
 
@@ -3353,18 +3473,19 @@
         }
 
         function limpiarTodo() {
-            if (confirm('¿Seguro que deseas borrar toda la orden?')) { orden = []; actualizarTabla(); }
+            if (confirm('¿Seguro que deseas borrar toda la orden?')) { orden = []; actualizarTabla(); document.getElementById('notas-generales').value = ''; }
         }
 
         function exportarOrden() {
             if (orden.length === 0) { alert('La orden está vacía.'); return; }
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFFFecha,Sucursal,Encargada,Producto,Marca,Cantidad\n";
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFFFecha,Sucursal,Encargada,Producto,Marca,Cantidad,Notas Generales\n";
             const fecha = document.getElementById('fecha').value;
             const sucursal = document.getElementById('sucursal').value || 'No especificada';
             const encargada = document.getElementById('encargada').value || 'No especificada';
+            const notas = document.getElementById('notas-generales').value.replace(/"/g, '""') || '';
             
-            orden.forEach(o => {
-                csvContent += '"' + fecha + '","' + sucursal + '","' + encargada + '","' + o.producto + '","' + o.marca + '",' + o.cantidad + '\n';
+            orden.forEach((o, index) => {
+                csvContent += '"' + fecha + '","' + sucursal + '","' + encargada + '","' + o.producto + '","' + o.marca + '",' + o.cantidad + ',"' + (index === 0 ? notas : '') + '"\n';
             });
             
             const encodedUri = encodeURI(csvContent);
