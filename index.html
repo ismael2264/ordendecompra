@@ -192,16 +192,27 @@
             const encargada = document.getElementById('encargada').value || 'No especificada';
             const notas = document.getElementById('notas-generales').value || 'Sin notas adicionales';
 
-            let productosTexto = '';
-            orden.forEach(o => {
-                productosTexto += '- ' + o.label + ' | Cantidad/Nota: ' + o.cantidad + '\n';
+            let productosHtml = '<table style="border-collapse:collapse;width:100%;font-family:Arial,sans-serif;font-size:14px;">';
+            productosHtml += '<tr style="background-color:#1e293b;color:#ffffff;">' +
+                '<th style="padding:8px;text-align:left;border:1px solid #cbd5e1;">#</th>' +
+                '<th style="padding:8px;text-align:left;border:1px solid #cbd5e1;">Producto - Marca</th>' +
+                '<th style="padding:8px;text-align:center;border:1px solid #cbd5e1;">Cantidad/Nota</th>' +
+                '</tr>';
+            orden.forEach((o, i) => {
+                const fondo = i % 2 === 0 ? '#f8fafc' : '#ffffff';
+                productosHtml += '<tr style="background-color:' + fondo + ';">' +
+                    '<td style="padding:8px;border:1px solid #cbd5e1;">' + (i + 1) + '</td>' +
+                    '<td style="padding:8px;border:1px solid #cbd5e1;">' + o.label + '</td>' +
+                    '<td style="padding:8px;text-align:center;border:1px solid #cbd5e1;">' + o.cantidad + '</td>' +
+                    '</tr>';
             });
+            productosHtml += '</table>';
 
             const templateParams = {
                 fecha: fecha,
                 sucursal: sucursal,
                 encargada: encargada,
-                productos: productosTexto,
+                productos: productosHtml,
                 notas: notas,
                 name: encargada,
                 email: ''
